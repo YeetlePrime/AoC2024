@@ -25,27 +25,41 @@ test "Part 1" {
         \\ 8 6 4 4 1
         \\ 1 3 6 7 9
     ;
-
     const allocator = std.testing.allocator;
 
     try std.testing.expectEqual(2, try part1(data, allocator));
 }
 
 test "Part 2" {
-    const data = "";
+    const data =
+        \\ 7 6 4 2 1
+        \\ 1 2 7 8 9
+        \\ 9 7 6 2 1
+        \\ 1 3 2 4 5
+        \\ 8 6 4 4 1
+        \\ 1 3 6 7 9
+    ;
     const allocator = std.testing.allocator;
 
-    try std.testing.expectEqual(0, try part2(data, allocator));
+    try std.testing.expectEqual(4, try part2(data, allocator));
 }
 
 // --------- IMPLEMENTATION ---------
 pub fn part1(data: []const u8, allocator: std.mem.Allocator) !i32 {
-    _ = allocator;
-
     var acc: i32 = 0;
-    var report_iter = std.mem.tokenizeScalar(u8, data, '\n');
-    while (report_iter.next()) |report| {
-        if (try is_safe(report)) acc += 1;
+    var line_iter = std.mem.tokenizeScalar(u8, data, '\n');
+    while (line_iter.next()) |line| {
+        var report = std.ArrayList(i32).init(allocator);
+        defer report.deinit();
+
+        var token_iter = std.mem.tokenizeScalar(u8, line, ' ');
+        while (token_iter.next()) |token| {
+            const number = try std.fmt.parseInt(i32, token, 10);
+
+            try report.append(number);
+        }
+
+        if (is_safe(report.items)) acc += 1;
     }
 
     return acc;
@@ -59,39 +73,37 @@ pub fn part2(data: []const u8, allocator: std.mem.Allocator) !i32 {
 }
 
 // --------- HELPERS ---------
-pub fn is_safe(report: []const u8) !bool {
+pub fn is_safe(report: []const i32) bool {
     const Ordering = enum { asc, desc };
-    var token_iter = std.mem.tokenizeScalar(u8, report, ' ');
 
-    var last_number_opt: ?i32 = null;
+    var last_level_opt: ?i32 = null;
     var ordering_opt: ?Ordering = null;
 
-    while (token_iter.next()) |token| {
-        const number = try std.fmt.parseInt(i32, token, 10);
-        defer last_number_opt = number;
+    for (report) |level| {
+        defer last_level_opt = level;
 
-        // do nothing for first number
-        const last_number = last_number_opt orelse continue;
+        // do nothing for first level
+        const last_level = last_level_opt orelse continue;
 
         // set ordering if it is not set yet
         if (ordering_opt == null) {
-            ordering_opt = if (last_number < number) Ordering.asc else Ordering.desc;
+            ordering_opt = if (last_level < level) Ordering.asc else Ordering.desc;
         }
         const ordering = ordering_opt orelse undefined;
 
         // compute the allowed range for the current number
         const min = switch (ordering) {
-            .asc => last_number + 1,
-            .desc => last_number - 3,
+            .asc => last_level + 1,
+            .desc => last_level - 3,
         };
         const max = switch (ordering) {
-            .asc => last_number + 3,
-            .desc => last_number - 1,
+            .asc => last_level + 3,
+            .desc => last_level - 1,
         };
 
         // if it is out of range, the ordering is unsatisfied
-        if (number > max or number < min) return false;
+        if (level > max or level < min) return false;
     }
 
-    return last_number_opt != null;
+    return last_level_opt != null;
 }
