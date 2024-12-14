@@ -16,6 +16,7 @@ pub fn main() !void {
 }
 
 // --------- TESTS ---------
+
 test "Part 1" {
     const data =
         \\ 7 6 4 2 1
@@ -66,13 +67,44 @@ pub fn part1(data: []const u8, allocator: std.mem.Allocator) !i32 {
 }
 
 pub fn part2(data: []const u8, allocator: std.mem.Allocator) !i32 {
-    _ = data;
-    _ = allocator;
+    var acc: i32 = 0;
+    var line_iter = std.mem.tokenizeScalar(u8, data, '\n');
+    while (line_iter.next()) |line| {
+        var report = std.ArrayList(i32).init(allocator);
+        defer report.deinit();
 
-    return -1;
+        var token_iter = std.mem.tokenizeScalar(u8, line, ' ');
+        while (token_iter.next()) |token| {
+            const number = try std.fmt.parseInt(i32, token, 10);
+
+            try report.append(number);
+        }
+
+        if (is_safe_with_removal(report.items, allocator)) acc += 1;
+    }
+
+    return acc;
 }
 
 // --------- HELPERS ---------
+pub fn is_safe_with_removal(report: []const i32, allocator: std.mem.Allocator) bool {
+    if (is_safe(report)) return true;
+
+    const slice = allocator.alloc(i32, report.len - 1) catch undefined;
+    defer allocator.free(slice);
+
+    for (0..report.len) |ignore_index| {
+        for (report, 0..) |level, index| {
+            const slice_index = if (ignore_index < index) index - 1 else index;
+            if (ignore_index != index) slice[slice_index] = level;
+        }
+
+        if (is_safe(slice)) return true;
+    }
+
+    return false;
+}
+
 pub fn is_safe(report: []const i32) bool {
     const Ordering = enum { asc, desc };
 
