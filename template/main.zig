@@ -20,14 +20,14 @@ test "Part 1" {
     const data = "";
     const allocator = std.testing.allocator;
 
-    std.testing.expectEqual(0, try part1(data, allocator));
+    try std.testing.expectEqual(0, try part1(data, allocator));
 }
 
 test "Part 2" {
     const data = "";
     const allocator = std.testing.allocator;
 
-    std.testing.expectEqual(0, try part2(data, allocator));
+    try std.testing.expectEqual(0, try part2(data, allocator));
 }
 
 // --------- IMPLEMENTATION ---------
