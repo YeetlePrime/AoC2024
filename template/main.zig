@@ -2,7 +2,7 @@ const std = @import("std");
 
 // --------- MAIN ---------
 pub fn main() !void {
-    const data = @embedFile("data.txt");
+    const data = @embedFile("input.txt");
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
