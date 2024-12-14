@@ -27,7 +27,7 @@ test "Part 2" {
     const data = "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
     const allocator = std.testing.allocator;
 
-    try std.testing.expectEqual(0, try part2(data, allocator));
+    try std.testing.expectEqual(48, try part2(data, allocator));
 }
 
 // --------- IMPLEMENTATION ---------
@@ -89,10 +89,95 @@ pub fn part1(data: []const u8, allocator: std.mem.Allocator) !i32 {
 }
 
 pub fn part2(data: []const u8, allocator: std.mem.Allocator) !i32 {
-    _ = data;
     _ = allocator;
 
-    return -1;
+    var should_multiply = true;
+    var acc: i32 = 0;
+    var iter = SliceIterator(u8).init(data);
+    while (iter.next()) |character| {
+        if (character == 'd') {
+            if (iter.peek() != 'o') continue;
+            iter.consume();
+
+            // detect do()
+            if (iter.peek() == '(') {
+                iter.consume();
+
+                if (iter.peek() != ')') continue;
+                iter.consume();
+
+                should_multiply = true;
+                continue;
+            }
+
+            if (iter.peek() != 'n') continue;
+            iter.consume();
+
+            if (iter.peek() != '\'') continue;
+            iter.consume();
+
+            if (iter.peek() != 't') continue;
+            iter.consume();
+
+            if (iter.peek() != '(') continue;
+            iter.consume();
+
+            if (iter.peek() != ')') continue;
+            iter.consume();
+
+            should_multiply = false;
+            continue;
+        }
+        if (character == 'm' and should_multiply) {
+            if (iter.peek() != 'u') continue;
+            iter.consume();
+
+            if (iter.peek() != 'l') continue;
+            iter.consume();
+
+            if (iter.peek() != '(') continue;
+            iter.consume();
+
+            // find first number
+            var c = iter.peek() orelse ' ';
+            if (!is_a_number(c)) continue;
+            var first_number: i32 = 0;
+            while (is_a_number(c)) {
+                defer {
+                    iter.consume();
+                    c = iter.peek() orelse ' ';
+                }
+
+                first_number = first_number * 10 + @as(i32, c - '0');
+            }
+            if (first_number > 999) continue;
+
+            if (iter.peek() != ',') continue;
+            iter.consume();
+
+            // find second number
+            c = iter.peek() orelse ' ';
+            if (!is_a_number(c)) continue;
+            var second_number: i32 = 0;
+            while (is_a_number(c)) {
+                defer {
+                    iter.consume();
+                    c = iter.peek() orelse ' ';
+                }
+
+                second_number = second_number * 10 + @as(i32, c - '0');
+            }
+            if (second_number > 999) continue;
+
+            if (iter.peek() != ')') continue;
+            iter.consume();
+
+            acc += first_number * second_number;
+            continue;
+        }
+    }
+
+    return acc;
 }
 
 // --------- HELPERS ---------
