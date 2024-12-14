@@ -40,10 +40,15 @@ test "Part 2" {
 
 // --------- IMPLEMENTATION ---------
 pub fn part1(data: []const u8, allocator: std.mem.Allocator) !i32 {
-    _ = data;
     _ = allocator;
 
-    return -1;
+    var acc: i32 = 0;
+    var report_iter = std.mem.tokenizeScalar(u8, data, '\n');
+    while (report_iter.next()) |report| {
+        if (try is_safe(report)) acc += 1;
+    }
+
+    return acc;
 }
 
 pub fn part2(data: []const u8, allocator: std.mem.Allocator) !i32 {
@@ -54,3 +59,39 @@ pub fn part2(data: []const u8, allocator: std.mem.Allocator) !i32 {
 }
 
 // --------- HELPERS ---------
+pub fn is_safe(report: []const u8) !bool {
+    const Ordering = enum { asc, desc };
+    var token_iter = std.mem.tokenizeScalar(u8, report, ' ');
+
+    var last_number_opt: ?i32 = null;
+    var ordering_opt: ?Ordering = null;
+
+    while (token_iter.next()) |token| {
+        const number = try std.fmt.parseInt(i32, token, 10);
+        defer last_number_opt = number;
+
+        // do nothing for first number
+        const last_number = last_number_opt orelse continue;
+
+        // set ordering if it is not set yet
+        if (ordering_opt == null) {
+            ordering_opt = if (last_number < number) Ordering.asc else Ordering.desc;
+        }
+        const ordering = ordering_opt orelse undefined;
+
+        // compute the allowed range for the current number
+        const min = switch (ordering) {
+            .asc => last_number + 1,
+            .desc => last_number - 3,
+        };
+        const max = switch (ordering) {
+            .asc => last_number + 3,
+            .desc => last_number - 1,
+        };
+
+        // if it is out of range, the ordering is unsatisfied
+        if (number > max or number < min) return false;
+    }
+
+    return last_number_opt != null;
+}
